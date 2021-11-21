@@ -16,6 +16,8 @@ namespace Messaging.Client;
 
 public interface IMessageConsumer
 {
+    public IMessageConsumer RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class;
+    public void Consume(CancellationToken token);
 }
 
 public class MessageConsumer : IDisposable, IMessageConsumer
@@ -26,8 +28,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
     private BlobContainerClient _storageClient;
     private CancellationToken _token;
     private ConcurrentDictionary<string, int> partitionEventCount = new();
-
-
+    
     public MessageConsumer(IConfiguration configuration, ILogger<MessageConsumer> logger)
     {
         _logger = logger;
@@ -114,11 +115,13 @@ public class MessageConsumer : IDisposable, IMessageConsumer
     /// </summary>
     /// <param name="handler">An instance of IMessageHandler that will handle the specific message type.</param>
     /// <param name="messageName">Optional message name if it differs from type name</param>
-    internal void RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class
+    public IMessageConsumer RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class
     {
         var messageType = handler.GetHandlerType();
 
         _handlers.Add(messageName ?? messageType.Name, (messageType, handler.Handle));
+
+        return this;
     }
 
     /// <summary>
