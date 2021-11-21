@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -20,21 +21,39 @@ public class MessageProducer
         var eventHubName = _configuration.GetValue<string>("EventHubName");
         _producer = new EventHubProducerClient(eventHubConnectionString, eventHubName);
     }
+
+    public void SendMessages(IList<(string name, object message)> messages)
+    {
+        var enveloped = messages.Select((name, message) => new EventData(JsonSerializer.Serialize(message))
+            {
+                MessageId = Guid.NewGuid().ToString(),
+                Properties = { new KeyValuePair<string, object>("MessageName", name ) },
+                ContentType = "application/json"
+            }
+        ).ToList();
+
+        SendInBatches(enveloped);
+    }
     
     public void SendMessages(IList<object> messages)
     {
+        var enveloped = messages.Select(x => new EventData(JsonSerializer.Serialize(x))
+            {
+                MessageId = Guid.NewGuid().ToString(),
+                Properties = { new KeyValuePair<string, object>("MessageName", x.GetType().Name ) },
+                ContentType = "application/json"
+            }
+        ).ToList();
+        
+        SendInBatches(enveloped);
+    }
+
+    private void SendInBatches(List<EventData> enveloped)
+    {
         try
         {
-            var enveloped = messages.Select(x => new EventData(JsonSerializer.Serialize(x))
-                {
-                    MessageId = Guid.NewGuid().ToString(),
-                    Properties = { new KeyValuePair<string, object>("MessageName", x.GetType().Name ) },
-                    ContentType = "application/json"
-                }
-            ).ToList();
-
             var batches = GetBatches(enveloped);
-            
+
             foreach (var batch in batches)
             {
                 _producer.SendAsync(batch);
@@ -45,7 +64,7 @@ public class MessageProducer
             // Transient failures are automatically retried
         }
     }
-
+    
     private IList<EventDataBatch> GetBatches(IList<EventData> messages)
     {
         var result = new List<EventDataBatch>();
