@@ -11,8 +11,8 @@ public class TestConsumer
         var tokenSource = new CancellationTokenSource();
         var handler = (ITestHandler) new TestHandler();
         var consumer = new MessageConsumer(null, null)
-            .Register(handler, "smokey")
-            .Register(handler);
+            .RegisterHandler(handler, "smokey")
+            .RegisterHandler(handler);
         
         consumer.Consume(tokenSource.Token);
     }
