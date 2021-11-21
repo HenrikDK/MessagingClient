@@ -4,9 +4,9 @@ namespace Messaging.Client.Test
 {
     class TestHandler : IMessageHandler<TestMessage>
     {
-        public void Handle(MessageEnvelope<TestMessage> message)
+        public void Handle(Envelope<TestMessage> message)
         {
-            throw new NotImplementedException();
+            Console.WriteLine($"test message {message.Message.MyDate}");
         }
     }
 }

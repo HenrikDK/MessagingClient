@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Text.Json;
+using System.Threading;
 using NUnit.Framework;
 
 namespace Messaging.Client.Test;
