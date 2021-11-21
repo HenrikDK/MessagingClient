@@ -1,16 +1,15 @@
 ﻿using System;
 
-namespace Messaging.Client.Test
+namespace Messaging.Client.Test;
+
+public interface ITestHandler : IMessageHandler<TestMessage>
 {
-    public interface ITestHandler : IMessageHandler<TestMessage>
-    {
-    }
+}
     
-    class TestHandler : ITestHandler
+class TestHandler : ITestHandler
+{
+    public void Handle(TestMessage message, Guid messageId)
     {
-        public void Handle(TestMessage message, Guid messageId)
-        {
-            Console.WriteLine($"test message {message.MyDate}");
-        }
+        Console.WriteLine($"test message {message.MyDate}");
     }
 }
