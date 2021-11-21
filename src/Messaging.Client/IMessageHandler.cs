@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Messaging.Client;
+﻿namespace Messaging.Client;
 
 public interface IMessageHandler<T>
 {

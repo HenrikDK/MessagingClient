@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using Microsoft.Extensions.Configuration;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Producer;
-
-namespace Messaging.Client;
+﻿namespace Messaging.Client;
 
 public interface IMessageProducer
 {
