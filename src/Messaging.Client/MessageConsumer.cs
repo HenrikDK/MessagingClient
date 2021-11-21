@@ -7,7 +7,7 @@ namespace Messaging.Client;
 
 public class MessageConsumer
 {
-    private Dictionary<string, (Type type, dynamic handler)> _handlers = new();
+    private Dictionary<string, (Type type, Action<object, Guid> handler)> _handlers = new();
 
     public MessageConsumer()
     {
@@ -19,11 +19,11 @@ public class MessageConsumer
     /// </summary>
     /// <param name="handler">An instance of IMessageHandler that will handle the specific message type.</param>
     /// <param name="messageName">Optional message name if it differs from type name</param>
-    internal void RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class
+    internal void RegisterHandler<T>(MessageHandler<T> handler, string messageName = null) where T : class
     {
         var messageType = handler.GetHandlerType();
 
-        _handlers.Add(messageName ?? messageType.Name, (messageType, handler));
+        _handlers.Add(messageName ?? messageType.Name, (messageType, handler.Handle));
     }
 
     /// <summary>
@@ -37,15 +37,8 @@ public class MessageConsumer
             var (type, handler) = _handlers["smokey"];
 
             var message = JsonSerializer.Deserialize(@"{""MyDate"":""2021-11-21T13:13:18.643852+01:00""}", type);
-            
-            var envelope = new Envelope<object>
-            {
-                MessageId = Guid.NewGuid(),
-                SentAt = DateTime.Now,
-                Message = message
-            };
 
-            handler.Handle(envelope);
+            handler.Invoke(message, Guid.NewGuid());
         }
     }
 }
