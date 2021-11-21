@@ -1,7 +1,7 @@
 ﻿namespace Messaging.Client
 {
-    public interface IMessageHandler<T> where T: class, IMessage 
+    public interface IMessageHandler<T> where T: class 
     {
-        public void Handle(MessageEnvelope<T> message);
+        public void Handle(Envelope<T> message);
     }
 }

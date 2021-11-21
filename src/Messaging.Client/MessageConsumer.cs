@@ -19,7 +19,7 @@ public class MessageConsumer
     /// </summary>
     /// <param name="handler">An instance of IMessageHandler that will handle the specific message type.</param>
     /// <param name="messageName">Optional message name if it differs from type name</param>
-    internal void RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class, IMessage
+    internal void RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class
     {
         var messageType = handler.GetHandlerType();
 
@@ -34,14 +34,15 @@ public class MessageConsumer
     {
         while (!token.IsCancellationRequested)
         {
-            var (type, handler) = _handlers[""];
+            var (type, handler) = _handlers["smokey"];
 
-            var message = JsonSerializer.Deserialize("", type);
-            var envelope = new MessageEnvelope<IMessage>
+            var message = JsonSerializer.Deserialize(@"{""MyDate"":""2021-11-21T13:13:18.643852+01:00""}", type);
+            
+            var envelope = new Envelope<object>
             {
                 MessageId = Guid.NewGuid(),
                 SentAt = DateTime.Now,
-                Message = (IMessage) message
+                Message = message
             };
 
             handler.Handle(envelope);
