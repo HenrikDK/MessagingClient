@@ -3,12 +3,11 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.1</TargetFramework>
         <IsPackable>true</IsPackable>
-        <NuspecFile>.nuspec</NuspecFile>
-        <PackageVersion>1.0.1</PackageVersion>
+        <PackageVersion>1.0.2</PackageVersion>
         <Title>Messaging.Client</Title>
         <Authors>HenrikDK</Authors>
         <Description>Generic Messaging client implements a delegating consumer workflow and encapsulates the implementation details of communicating with Azure Event Hub</Description>
-        <PackageProjectUrl>tbd</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/HenrikDK/MessagingClient</PackageProjectUrl>
         <PackageTags>azure event hub messaging delegating consumer</PackageTags>
         <LangVersion>default</LangVersion>
     </PropertyGroup>
