@@ -13,18 +13,4 @@ public static class MessagingExtensions
     {
         return typeof(T);
     }
-    
-    /// <summary>
-    /// register a handler with the consumer, uses reflection to determine message name if none is provided. 
-    /// </summary>
-    /// <param name="consumer">The event consumer that will process the messages</param>
-    /// <param name="handler">An instance of IMessageHandler that will handle the specific message type.</param>
-    /// <param name="messageName">Optional message name if it differs from type name</param>
-    /// <returns></returns>
-    public static MessageConsumer Register<T>(this MessageConsumer consumer, IMessageHandler<T> handler, string messageName = null) where T : class
-    {
-        consumer.RegisterHandler(handler, messageName);
-
-        return consumer;
-    }
 }
