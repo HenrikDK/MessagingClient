@@ -2,7 +2,7 @@
 
 namespace Messaging.Client.Test;
 
-class TestMessage : IMessage
+class TestMessage
 {
     public DateTime MyDate { get; set; }
 }

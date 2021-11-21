@@ -2,11 +2,11 @@
 
 namespace Messaging.Client.Test
 {
-    class TestHandler : IMessageHandler<TestMessage>
+    class TestHandler : MessageHandler<TestMessage>
     {
-        public void Handle(Envelope<TestMessage> message)
+        public override void Handle(TestMessage message, Guid messageId)
         {
-            Console.WriteLine($"test message {message.Message.MyDate}");
+            Console.WriteLine($"test message {message.MyDate}");
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Text.Json;
-using System.Threading;
+﻿using System.Threading;
 using NUnit.Framework;
 
 namespace Messaging.Client.Test;
@@ -14,7 +12,7 @@ public class TestConsumer
         var handler = new TestHandler();
         var consumer = new MessageConsumer()
             .Register(handler, "smokey")
-            .Register(handler, "lemon");
+            .Register(handler);
         
         consumer.Consume(tokenSource.Token);
     }
