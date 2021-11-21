@@ -1,0 +1,25 @@
+name: Docker Publish
+
+on: [push]
+
+jobs:
+  build1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build artifacts
+        run: docker build . -o out
+        working-directory: src/Messaging.Client
+        env:
+          DOCKER_BUILDKIT: 1
+
+      - name: List artifacts
+        run: ls -lhR
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: nuget-package
+          path: '**/out/*.nupkg'
