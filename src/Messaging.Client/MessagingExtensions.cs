@@ -9,7 +9,7 @@ public static class MessagingExtensions
     /// </summary>
     /// <param name="handler">The handler who's type has to be determined</param>
     /// <returns>Type of message the handler accepts</returns>
-    public static Type GetHandlerType<T>(this MessageHandler<T> handler) where T : class
+    public static Type GetHandlerType<T>(this IMessageHandler<T> handler) where T : class
     {
         return typeof(T);
     }
@@ -21,7 +21,7 @@ public static class MessagingExtensions
     /// <param name="handler">An instance of IMessageHandler that will handle the specific message type.</param>
     /// <param name="messageName">Optional message name if it differs from type name</param>
     /// <returns></returns>
-    public static MessageConsumer Register<T>(this MessageConsumer consumer, MessageHandler<T> handler, string messageName = null) where T : class
+    public static MessageConsumer Register<T>(this MessageConsumer consumer, IMessageHandler<T> handler, string messageName = null) where T : class
     {
         consumer.RegisterHandler(handler, messageName);
 
