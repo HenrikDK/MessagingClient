@@ -2,7 +2,7 @@
 
 namespace Messaging.Client
 {
-    public class MessageEnvelope<T> where T : class
+    public class Envelope<T> where T : class
     {
         public Guid MessageId { get; set; }
         public DateTime SentAt { get; set; }
