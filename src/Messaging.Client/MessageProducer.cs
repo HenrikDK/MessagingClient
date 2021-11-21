@@ -13,23 +13,70 @@ public class MessageProducer
     private readonly IConfiguration _configuration;
     private EventHubProducerClient _producer;
     
-    public MessageProducer(IConfiguration configuration, string topic)
+    public MessageProducer(IConfiguration configuration)
     {
         _configuration = configuration;
-        _producer = new EventHubProducerClient(_configuration.GetValue<string>("event-hub"), topic);
+        var eventHubConnectionString = _configuration.GetValue<string>("EventHubConnectionString");
+        var eventHubName = _configuration.GetValue<string>("EventHubName");
+        _producer = new EventHubProducerClient(eventHubConnectionString, eventHubName);
     }
     
     public void SendMessages(IList<object> messages)
     {
-        // TODO handle batching.
-        var enveloped = messages.Select(x => new EventData(JsonSerializer.Serialize(x))
-            {
-                MessageId = Guid.NewGuid().ToString(),
-                Properties = { new KeyValuePair<string, object>("MessageName", x.GetType().Name ) },
-                ContentType = "json"
-            }
-        );
+        try
+        {
+            var enveloped = messages.Select(x => new EventData(JsonSerializer.Serialize(x))
+                {
+                    MessageId = Guid.NewGuid().ToString(),
+                    Properties = { new KeyValuePair<string, object>("MessageName", x.GetType().Name ) },
+                    ContentType = "application/json"
+                }
+            ).ToList();
 
-        _producer.SendAsync(enveloped).Wait();
+            var batches = GetBatches(enveloped);
+
+            _producer.SendAsync(enveloped).Wait();
+
+            foreach (var batch in batches)
+            {
+                _producer.SendAsync(batch);
+            }
+        }
+        catch
+        {
+            // Transient failures are automatically retried
+        }
+    }
+
+    private IList<EventDataBatch> GetBatches(IList<EventData> messages)
+    {
+        var result = new List<EventDataBatch>();
+        var currentBatch = _producer.CreateBatchAsync().Result;
+
+        foreach (var message in messages)
+        {
+            if (currentBatch.TryAdd(message)) continue;
+
+            if (currentBatch.Count == 0)
+            {
+                throw new Exception("Message too large to send");
+            }
+            
+            // finish current batch
+            result.Add(currentBatch);
+            
+            // start new batch
+            currentBatch = _producer.CreateBatchAsync().Result;
+            
+            // try to add message again
+            if (!currentBatch.TryAdd(message))
+            {
+                throw new Exception("Message too large to send");
+            }
+        }
+        
+        result.Add(currentBatch);
+
+        return result;
     }
 }
