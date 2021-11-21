@@ -34,9 +34,7 @@ public class MessageProducer
             ).ToList();
 
             var batches = GetBatches(enveloped);
-
-            _producer.SendAsync(enveloped).Wait();
-
+            
             foreach (var batch in batches)
             {
                 _producer.SendAsync(batch);
