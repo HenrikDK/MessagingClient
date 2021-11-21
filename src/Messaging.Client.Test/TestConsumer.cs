@@ -9,8 +9,8 @@ public class TestConsumer
     public void Should_build_consumer()
     {
         var tokenSource = new CancellationTokenSource();
-        var handler = new TestHandler();
-        var consumer = new MessageConsumer()
+        var handler = (ITestHandler) new TestHandler();
+        var consumer = new MessageConsumer(null, null)
             .Register(handler, "smokey")
             .Register(handler);
         
