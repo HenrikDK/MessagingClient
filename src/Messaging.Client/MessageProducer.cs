@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -9,7 +8,13 @@ using Azure.Messaging.EventHubs.Producer;
 
 namespace Messaging.Client;
 
-public class MessageProducer
+public interface IMessageProducer
+{
+    void SendMessages(IList<(string name, object message)> messages);
+    void SendMessages(IList<object> messages);
+}
+
+public class MessageProducer : IMessageProducer
 {
     private readonly IConfiguration _configuration;
     private EventHubProducerClient _producer;
