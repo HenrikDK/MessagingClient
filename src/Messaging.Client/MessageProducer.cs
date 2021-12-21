@@ -1,24 +1,47 @@
-﻿namespace Messaging.Client;
+﻿using Azure.Identity;
+
+namespace Messaging.Client;
 
 public interface IMessageProducer
 {
+    /// <summary>
+    /// Sends a list of messages where each message has a specific name other than the type name
+    /// </summary>
+    /// <param name="messages">List of name and object pairs that can be serialized as json</param>
     void SendMessages(IList<(string name, object message)> messages);
+    
+    /// <summary>
+    /// Sends a list of messages where message name for each message is the same as the name of the type
+    /// </summary>
+    /// <param name="messages">List of objecst to serialize to json</param>
     void SendMessages(IList<object> messages);
 }
 
 public class MessageProducer : IMessageProducer
 {
-    private readonly IConfiguration _configuration;
     private EventHubProducerClient _producer;
     
+    /// <summary>
+    /// Create a new message producer
+    /// </summary>
+    /// <param name="configuration">configuration object that will provide EventHubName and either EventHubFullyQualifiedNamespace or EventHubConnectionString</param>
     public MessageProducer(IConfiguration configuration)
     {
-        _configuration = configuration;
-        var eventHubConnectionString = _configuration.GetValue<string>("EventHubConnectionString");
-        var eventHubName = _configuration.GetValue<string>("EventHubName");
-        _producer = new EventHubProducerClient(eventHubConnectionString, eventHubName);
-    }
+        var fullyQualifiedNamespace = configuration.GetValue<string>("EventHubFullyQualifiedNamespace");
+        var eventHubName = configuration.GetValue<string>("EventHubName");
 
+        var eventHubConnectionString = configuration.GetValue<string>("EventHubConnectionString");
+        if (!string.IsNullOrEmpty(fullyQualifiedNamespace))
+        {
+            var credentials = new DefaultAzureCredential();
+            _producer = new EventHubProducerClient(fullyQualifiedNamespace, eventHubName, credentials);
+        }
+        else
+        {
+            _producer = new EventHubProducerClient(eventHubConnectionString, eventHubName);
+        }
+    }
+    
     public void SendMessages(IList<(string name, object message)> messages)
     {
         var enveloped = messages.Select((name, message) => new EventData(JsonSerializer.Serialize(message))

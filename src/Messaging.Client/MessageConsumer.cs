@@ -1,13 +1,40 @@
-﻿namespace Messaging.Client;
+﻿using Azure.Identity;
+
+namespace Messaging.Client;
 
 public interface IMessageConsumer
 {
+    /// <summary>
+    /// Register handler with the consumer, uses reflection to determine message name if none is provided
+    /// </summary>
+    /// <param name="handler">An instance of IMessageHandler that will handle the specific message type</param>
+    /// <param name="messageName">Optional message name if it differs from type name</param>
+    /// <returns>The consumer</returns>
     public IMessageConsumer RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class;
-    public void Consume(CancellationToken token);
+    
+    /// <summary>
+    /// Begin processing
+    /// </summary>
+    /// <param name="token">A cancellation token</param>
+    /// <param name="eventHubConnectionString">Nullable will default to read EventHubConnectionString from configuration if not provided</param>
+    /// <param name="eventHubName">Nullable will default to read EventHubName from configuration if not provided</param>
+    /// <param name="storageConnectionString">Nullable will default to read StorageConnectionString from configuration if not provided</param>
+    /// <param name="storageContainerName">Nullable will default to read StorageContainerName from configuration if not provided</param>
+    public void Consume(CancellationToken token, string eventHubConnectionString = null, string eventHubName = null, string storageConnectionString = null, string storageContainerName = null);
+    
+    /// <summary>
+    /// Begin processing
+    /// </summary>
+    /// <param name="token">A cancellation token</param>
+    /// <param name="fullyQualifiedNameSpace">Nullable will default to read EventHubFullyQualifiedNameSpace from configuration if not provided</param>
+    /// <param name="eventHubName">Nullable will default to read EventHubName from configuration if not provided</param>
+    /// <param name="storageContainerUrl">Nullable will default to read StorageContainerUrl from configuration if not provided</param>
+    public void ConsumeWithManagedIdentity(CancellationToken token, string fullyQualifiedNameSpace = null, string eventHubName = null, string storageContainerUrl = null);
 }
 
 public class MessageConsumer : IDisposable, IMessageConsumer
 {
+    private readonly IConfiguration _configuration;
     private readonly ILogger<MessageConsumer> _logger;
     private Dictionary<string, (Type type, Action<object, Guid> handler)> _handlers = new();
     private EventProcessorClient _processor;
@@ -17,18 +44,8 @@ public class MessageConsumer : IDisposable, IMessageConsumer
     
     public MessageConsumer(IConfiguration configuration, ILogger<MessageConsumer> logger)
     {
+        _configuration = configuration;
         _logger = logger;
-        var consumerGroup = Assembly.GetExecutingAssembly().GetType().Namespace;
-        var eventHubConnectionString = configuration.GetValue<string>("EventHubConnectionString");
-        var eventHubName = configuration.GetValue<string>("EventHubName");
-        var storageConnectionString = configuration.GetValue<string>("StorageConnectionString");
-        var storageContainerName = configuration.GetValue<string>("StorageContainerName");
-        
-        _storageClient = new BlobContainerClient(storageConnectionString, storageContainerName);
-        _processor = new EventProcessorClient(_storageClient, consumerGroup, eventHubConnectionString, eventHubName);
-
-        _processor.ProcessEventAsync += ProcessEventHandler;
-        _processor.ProcessErrorAsync += ProcessErrorHandler;
     }
 
     private async Task ProcessErrorHandler(ProcessErrorEventArgs arg)
@@ -110,17 +127,49 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         return this;
     }
 
-    /// <summary>
-    /// Begin processing messages
-    /// </summary>
-    /// <param name="token">A cancellation token</param>
-    public void Consume(CancellationToken token)
+    public void Consume(CancellationToken token, string eventHubConnectionString = null, string eventHubName = null, string storageConnectionString = null, string storageContainerName = null)
     {
-        _token = token;
-
+        var consumerGroup = Assembly.GetExecutingAssembly().GetName().Name;
+        eventHubConnectionString ??= _configuration.GetValue<string>("EventHubConnectionString");
+        eventHubName ??= _configuration.GetValue<string>("EventHubName");
+        storageConnectionString ??= _configuration.GetValue<string>("StorageConnectionString");
+        storageContainerName ??= _configuration.GetValue<string>("StorageContainerName");
+        
+        _storageClient = new BlobContainerClient(storageConnectionString, storageContainerName);
+        _processor = new EventProcessorClient(_storageClient, consumerGroup, eventHubConnectionString, eventHubName);
+        _processor.ProcessEventAsync += ProcessEventHandler;
+        _processor.ProcessErrorAsync += ProcessErrorHandler;
+        
         _processor.StartProcessing(_token);
+
+        while (_processor.IsRunning)
+        {
+            Task.Delay(TimeSpan.FromMinutes(1));
+        }
     }
 
+    public void ConsumeWithManagedIdentity(CancellationToken token, string fullyQualifiedNameSpace = null, string eventHubName = null, string storageContainerUrl = null)
+    {
+        var consumerGroup = Assembly.GetExecutingAssembly().GetName().Name;
+        fullyQualifiedNameSpace ??= _configuration.GetValue<string>("EventHubFullyQualifiedNameSpace");
+        eventHubName ??= _configuration.GetValue<string>("EventHubName");
+        storageContainerUrl ??= _configuration.GetValue<string>("StorageContainerUrl");
+
+        var credentials = new DefaultAzureCredential();
+            
+        _storageClient = new BlobContainerClient(new Uri(storageContainerUrl), credentials);
+        _processor = new EventProcessorClient(_storageClient, consumerGroup, fullyQualifiedNameSpace, eventHubName, credentials);
+        _processor.ProcessEventAsync += ProcessEventHandler;
+        _processor.ProcessErrorAsync += ProcessErrorHandler;
+        
+        _processor.StartProcessing(_token);
+
+        while (_processor.IsRunning)
+        {
+            Task.Delay(TimeSpan.FromMinutes(1));
+        }
+    }
+    
     public void Dispose()
     {
         _processor.StopProcessing(_token);
