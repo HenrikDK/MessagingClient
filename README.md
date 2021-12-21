@@ -87,16 +87,16 @@ In you applications persistent logic (such as the main running thread of a hoste
 The wire up the consumer with the handlers in its own running thread:
 
 ```
-        var consumer = Task.Run(() =>
-            {
-                var tokenSource = new CancellationTokenSource();
-                _consumer
-                    .RegisterHandler(_handleTestMessage);
-        
-                consumer.ConsumeWithManagedIdentity(tokenSource.Token);
-            }).ContinueWith(HandleTaskCancellation, cancellationToken);
+    var consumer = Task.Run(() =>
+        {
+            var tokenSource = new CancellationTokenSource();
+            _consumer
+                .RegisterHandler(_handleTestMessage);
+    
+            consumer.ConsumeWithManagedIdentity(tokenSource.Token);
+        }).ContinueWith(HandleTaskCancellation, cancellationToken);
 
-        _task.Add(consumer);
+    _task.Add(consumer);
 ```
 
 Note that its important to add the consumer task to the list of tasks so that they can be waited before shutdown.
