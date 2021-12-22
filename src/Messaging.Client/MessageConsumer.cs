@@ -1,4 +1,4 @@
-using Azure.Identity;
+﻿using Azure.Identity;
 
 namespace Messaging.Client;
 
@@ -52,7 +52,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
     {
         try
         {
-            _logger.Log(LogLevel.Error, arg.Exception, $"Event processor encountered an unhandled exception.");
+            _logger.LogError(arg.Exception, $"Event processor encountered an unhandled exception.");
         }
         catch
         {
@@ -92,7 +92,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
             }
             catch (Exception e)
             {
-                _logger.Log(LogLevel.Error, e, "Exception handling message, skipping");
+                _logger.LogError(e, "Exception handling message, skipping");
             }
             
             var partitionId = arg.Partition.PartitionId;
