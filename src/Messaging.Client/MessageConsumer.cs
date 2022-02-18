@@ -1,4 +1,4 @@
-﻿using Azure.Identity;
+using Azure.Identity;
 
 namespace Messaging.Client;
 
@@ -129,6 +129,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
 
     public void Consume(CancellationToken token, string eventHubConnectionString = null, string eventHubName = null, string storageConnectionString = null, string storageContainerName = null)
     {
+        _token = token;
         var consumerGroup = Assembly.GetEntryAssembly().GetName().Name;
         eventHubConnectionString ??= _configuration.GetValue<string>("EventHubConnectionString");
         eventHubName ??= _configuration.GetValue<string>("EventHubName");
@@ -150,6 +151,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
 
     public void ConsumeWithManagedIdentity(CancellationToken token, string fullyQualifiedNameSpace = null, string eventHubName = null, string storageContainerUrl = null)
     {
+        _token = token;
         var consumerGroup = Assembly.GetEntryAssembly().GetName().Name;
         fullyQualifiedNameSpace ??= _configuration.GetValue<string>("EventHubFullyQualifiedNameSpace");
         eventHubName ??= _configuration.GetValue<string>("EventHubName");
