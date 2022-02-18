@@ -1,6 +1,4 @@
-using Azure.Identity;
-
-namespace Messaging.Client;
+﻿namespace Messaging.Client;
 
 public interface IMessageConsumer
 {
@@ -158,7 +156,9 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         storageContainerUrl ??= _configuration.GetValue<string>("StorageContainerUrl");
 
         var credentials = new DefaultAzureCredential();
-            
+
+        EnsureConsumerGroup(credentials, fullyQualifiedNameSpace, eventHubName, consumerGroup);
+
         _storageClient = new BlobContainerClient(new Uri(storageContainerUrl), credentials);
         _processor = new EventProcessorClient(_storageClient, consumerGroup, fullyQualifiedNameSpace, eventHubName, credentials);
         _processor.ProcessEventAsync += ProcessEventHandler;
@@ -170,6 +170,22 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         {
             Task.Delay(TimeSpan.FromMinutes(1));
         }
+    }
+    
+    private static void EnsureConsumerGroup(DefaultAzureCredential credentials, string nameSpace, string eventHubName, string consumerGroup)
+    {
+        return;
+        var token = credentials.GetToken(new TokenRequestContext());
+        var resourceGroup = nameSpace.Substring(0, 3); // placeholder
+        var subscriptionId = nameSpace.Substring(3, 4); // placeholder
+        
+        var serviceClientCredentials = new TokenCredentials(token.Token);
+        var client = new EventHubManagementClient(serviceClientCredentials)
+        {
+            SubscriptionId = subscriptionId
+        };
+        
+        client.ConsumerGroups.CreateOrUpdate(resourceGroup, nameSpace, eventHubName, consumerGroup);
     }
     
     public void Dispose()
