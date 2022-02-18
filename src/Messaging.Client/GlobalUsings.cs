@@ -10,7 +10,11 @@ global using System.Threading.Tasks;
 
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.Logging;
+global using Microsoft.Azure.Management.EventHub;
+global using Microsoft.Rest;
 
+global using Azure.Core;
+global using Azure.Identity;
 global using Azure.Messaging.EventHubs;
 global using Azure.Messaging.EventHubs.Processor;
 global using Azure.Messaging.EventHubs.Producer;
