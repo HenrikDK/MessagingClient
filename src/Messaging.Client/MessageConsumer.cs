@@ -1,4 +1,4 @@
-namespace Messaging.Client;
+﻿namespace Messaging.Client;
 
 public interface IMessageConsumer
 {
@@ -126,7 +126,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         
         var credentials = new DefaultAzureCredential();
 
-        EnsureConsumerGroup(credentials, fullyQualifiedNameSpace, eventHubName, consumerGroup);
+        EnsureConsumerGroup(subscriptionId, resourceGroup, credentials, nameSpace, eventHubName, consumerGroup);
 
         _storageClient = new BlobContainerClient(new Uri(storageContainer), credentials);
         _processor = new EventProcessorClient(_storageClient, consumerGroup, fullyQualifiedNameSpace, eventHubName, credentials);
@@ -140,13 +140,11 @@ public class MessageConsumer : IDisposable, IMessageConsumer
             Task.Delay(TimeSpan.FromMinutes(1));
         }
     }
-    
-    private static void EnsureConsumerGroup(DefaultAzureCredential credentials, string nameSpace, string eventHubName, string consumerGroup)
+
+    private void EnsureConsumerGroup(string subscriptionId, string resourceGroup, DefaultAzureCredential credentials, string nameSpace, string eventHubName, string consumerGroup)
     {
-        return;
-        var token = credentials.GetToken(new TokenRequestContext());
-        var resourceGroup = nameSpace.Substring(0, 3); // placeholder
-        var subscriptionId = nameSpace.Substring(3, 4); // placeholder
+        var requestContext = new TokenRequestContext(new[] {"https://management.azure.com/"});
+        var token = credentials.GetToken(requestContext);
         
         var serviceClientCredentials = new TokenCredentials(token.Token);
         var client = new EventHubManagementClient(serviceClientCredentials)
