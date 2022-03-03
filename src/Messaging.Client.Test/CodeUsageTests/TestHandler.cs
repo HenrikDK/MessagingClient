@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Messaging.Client.Test;
+namespace Messaging.Client.Test.CodeUsageTests;
 
 public interface ITestHandler : IMessageHandler<TestMessage>
 {

@@ -3,9 +3,9 @@ using NUnit.Framework;
 
 namespace Messaging.Client.Test.CodeUsageTests;
 
-public class TestConsumer
+public class TestClientUsage
 {
-    [Test]
+    //[Test]
     public void Should_build_consumer_and_register_handlers()
     {
         var tokenSource = new CancellationTokenSource();
