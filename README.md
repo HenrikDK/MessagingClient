@@ -5,34 +5,16 @@ Purpose of this repository is to build a messaging client that encapuslates a co
 The client implements a standardized Envelope, while hiding the details of communicating, leaving the developer to focus on the business logic. 
 
 ## Settings
-Both message producer and consumer support the ConnectionString or Managed Identity authentication schemes.
-
-Settings used when using connectionString authentication:
+Both message producer and consumer use Managed Identity authentication when connecting to Azure EventHub.
 
 ```
 {
-    "EventHubConnectionString": ""
-    "EventHubName": ""
-
-    "StorageConnectionString": ""
-    "StorageContainerName": ""
+    "eventhub-id": ""
+    "eventhub-storage-container": ""
 }
 ```
 
-The first two settings are shared between consumer and producer while the last two are only used by the consumer to implement checkpointing.
-
-By default Messaging Client will look for these values in the IConfiguration provider at setup time, but for the consumer you can use the available override to provide these settings directly.
-
-Settings used when using Managed Identity authentication:
-
-```
-{
-    "EventHubFullyQualifiedNameSpace": ""
-    "EventHubName": ""
-
-    "StorageContainerUrl": ""
-}
-```
+By default Messaging Client will look for these values in the IConfiguration provider at setup time, but both producer and consumer have constructor overloads that allow you to provide these values directly.
 
 As always with managed identity you avoid keeping secrets in configuration and access is entirely controlled by the identity of the machines running the instance.
 
