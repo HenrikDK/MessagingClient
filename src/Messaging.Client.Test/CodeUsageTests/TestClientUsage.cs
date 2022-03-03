@@ -1,12 +1,12 @@
 ﻿using System.Threading;
 using NUnit.Framework;
 
-namespace Messaging.Client.Test;
+namespace Messaging.Client.Test.CodeUsageTests;
 
 public class TestConsumer
 {
     [Test]
-    public void Should_build_consumer()
+    public void Should_build_consumer_and_register_handlers()
     {
         var tokenSource = new CancellationTokenSource();
         var handler = (ITestHandler) new TestHandler();
