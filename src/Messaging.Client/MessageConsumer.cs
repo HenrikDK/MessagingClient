@@ -1,4 +1,4 @@
-﻿namespace Messaging.Client;
+namespace Messaging.Client;
 
 public interface IMessageConsumer
 {
@@ -11,23 +11,12 @@ public interface IMessageConsumer
     public IMessageConsumer RegisterHandler<T>(IMessageHandler<T> handler, string messageName = null) where T : class;
     
     /// <summary>
-    /// Begin processing
+    /// Connects to the eventhub using managed identity and begin processing messages
     /// </summary>
     /// <param name="token">A cancellation token</param>
-    /// <param name="eventHubConnectionString">Nullable will default to read EventHubConnectionString from configuration if not provided</param>
-    /// <param name="eventHubName">Nullable will default to read EventHubName from configuration if not provided</param>
-    /// <param name="storageConnectionString">Nullable will default to read StorageConnectionString from configuration if not provided</param>
-    /// <param name="storageContainerName">Nullable will default to read StorageContainerName from configuration if not provided</param>
-    public void Consume(CancellationToken token, string eventHubConnectionString = null, string eventHubName = null, string storageConnectionString = null, string storageContainerName = null);
-    
-    /// <summary>
-    /// Begin processing
-    /// </summary>
-    /// <param name="token">A cancellation token</param>
-    /// <param name="fullyQualifiedNameSpace">Nullable will default to read EventHubFullyQualifiedNameSpace from configuration if not provided</param>
-    /// <param name="eventHubName">Nullable will default to read EventHubName from configuration if not provided</param>
-    /// <param name="storageContainerUrl">Nullable will default to read StorageContainerUrl from configuration if not provided</param>
-    public void ConsumeWithManagedIdentity(CancellationToken token, string fullyQualifiedNameSpace = null, string eventHubName = null, string storageContainerUrl = null);
+    /// <param name="eventHubId">Azure id of the eventhub from the json view (if a value is not provided "eventhub-id" is read from configuration)</param>
+    /// <param name="storageContainer">Azure blob storage container url (if a value is not provided "eventhub-storage-container" is read from configuration)</param>
+    public void Consume(CancellationToken token, string eventHubId = null, string storageContainer = null);
 }
 
 public class MessageConsumer : IDisposable, IMessageConsumer
@@ -124,42 +113,22 @@ public class MessageConsumer : IDisposable, IMessageConsumer
 
         return this;
     }
-
-    public void Consume(CancellationToken token, string eventHubConnectionString = null, string eventHubName = null, string storageConnectionString = null, string storageContainerName = null)
+    
+    public void Consume(CancellationToken token, string eventHubId = null, string storageContainer = null)
     {
         _token = token;
         var consumerGroup = Assembly.GetEntryAssembly().GetName().Name;
-        eventHubConnectionString ??= _configuration.GetValue<string>("EventHubConnectionString");
-        eventHubName ??= _configuration.GetValue<string>("EventHubName");
-        storageConnectionString ??= _configuration.GetValue<string>("StorageConnectionString");
-        storageContainerName ??= _configuration.GetValue<string>("StorageContainerName");
+        eventHubId ??= _configuration.GetValue<string>("eventhub-id");
+        storageContainer ??= _configuration.GetValue<string>("eventhub-storage-container");
+
+        var (subscriptionId, resourceGroup, nameSpace, eventHubName) = eventHubId.ExtractValuesFromId();
+        var fullyQualifiedNameSpace = $"{nameSpace}.servicebus.windows.net";
         
-        _storageClient = new BlobContainerClient(storageConnectionString, storageContainerName);
-        _processor = new EventProcessorClient(_storageClient, consumerGroup, eventHubConnectionString, eventHubName);
-        _processor.ProcessEventAsync += ProcessEventHandler;
-        _processor.ProcessErrorAsync += ProcessErrorHandler;
-        
-        _processor.StartProcessing(_token);
-
-        while (_processor.IsRunning)
-        {
-            Task.Delay(TimeSpan.FromMinutes(1));
-        }
-    }
-
-    public void ConsumeWithManagedIdentity(CancellationToken token, string fullyQualifiedNameSpace = null, string eventHubName = null, string storageContainerUrl = null)
-    {
-        _token = token;
-        var consumerGroup = Assembly.GetEntryAssembly().GetName().Name;
-        fullyQualifiedNameSpace ??= _configuration.GetValue<string>("EventHubFullyQualifiedNameSpace");
-        eventHubName ??= _configuration.GetValue<string>("EventHubName");
-        storageContainerUrl ??= _configuration.GetValue<string>("StorageContainerUrl");
-
         var credentials = new DefaultAzureCredential();
 
         EnsureConsumerGroup(credentials, fullyQualifiedNameSpace, eventHubName, consumerGroup);
 
-        _storageClient = new BlobContainerClient(new Uri(storageContainerUrl), credentials);
+        _storageClient = new BlobContainerClient(new Uri(storageContainer), credentials);
         _processor = new EventProcessorClient(_storageClient, consumerGroup, fullyQualifiedNameSpace, eventHubName, credentials);
         _processor.ProcessEventAsync += ProcessEventHandler;
         _processor.ProcessErrorAsync += ProcessErrorHandler;
