@@ -24,24 +24,30 @@ public class MessageProducer : IMessageProducer
     /// <summary>
     /// Create a new message producer
     /// </summary>
-    /// <param name="configuration">configuration object that will provide EventHubName and either EventHubFullyQualifiedNamespace or EventHubConnectionString</param>
+    /// <param name="configuration">configuration object that will provide "eventhub-id"</param>
     public MessageProducer(IConfiguration configuration)
     {
-        var fullyQualifiedNamespace = configuration.GetValue<string>("EventHubFullyQualifiedNamespace");
-        var eventHubName = configuration.GetValue<string>("EventHubName");
+        var eventHubId = configuration.GetValue<string>("eventhub-id");
+        var (subscriptionId, resourceGroup, nameSpace, eventHubName) = eventHubId.ExtractValuesFromId();
+        var fullyQualifiedNameSpace = $"{nameSpace}.servicebus.windows.net";
 
-        var eventHubConnectionString = configuration.GetValue<string>("EventHubConnectionString");
-        if (!string.IsNullOrEmpty(fullyQualifiedNamespace))
-        {
-            var credentials = new DefaultAzureCredential();
-            _producer = new EventHubProducerClient(fullyQualifiedNamespace, eventHubName, credentials);
-        }
-        else
-        {
-            _producer = new EventHubProducerClient(eventHubConnectionString, eventHubName);
-        }
+        var credentials = new DefaultAzureCredential();
+        _producer = new EventHubProducerClient(fullyQualifiedNameSpace, eventHubName, credentials);
     }
-    
+
+    /// <summary>
+    /// Create a new message producer
+    /// </summary>
+    /// <param name="configuration">Azure id of the eventhub from the json view</param>
+    public MessageProducer(string eventHubId)
+    {
+        var (subscriptionId, resourceGroup, nameSpace, eventHubName) = eventHubId.ExtractValuesFromId();
+        var fullyQualifiedNameSpace = $"{nameSpace}.servicebus.windows.net";
+
+        var credentials = new DefaultAzureCredential();
+        _producer = new EventHubProducerClient(fullyQualifiedNameSpace, eventHubName, credentials);
+    }
+
     public void SendMessages(IList<(string name, object message)> messages)
     {
         var enveloped = messages.Select((name, message) => new EventData(JsonSerializer.Serialize(message))
@@ -96,7 +102,7 @@ public class MessageProducer : IMessageProducer
 
             if (currentBatch.Count == 0)
             {
-                throw new Exception("Message too large to send");
+                throw new MessagingClientException("Message too large to send");
             }
             
             // finish current batch
@@ -108,7 +114,7 @@ public class MessageProducer : IMessageProducer
             // try to add message again
             if (!currentBatch.TryAdd(message))
             {
-                throw new Exception("Message too large to send");
+                throw new MessagingClientException("Message too large to send");
             }
         }
         
