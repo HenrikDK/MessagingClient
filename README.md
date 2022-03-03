@@ -36,7 +36,7 @@ Settings used when using Managed Identity authentication:
 
 As always with managed identity you avoid keeping secrets in configuration and access is entirely controlled by the identity of the machines running the instance.
 
-## Consumer % Producer Usage
+## Consumer & Producer Usage
 
 ### 1. IOC Setup
 Setup IMessageConsumer and IMessageProducer using your favorite DI tool. In order to use both the consumer and producer your application needs to know how to initialize it, the following example uses Lamar IOC framework.
