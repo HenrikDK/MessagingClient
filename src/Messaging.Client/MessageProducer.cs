@@ -1,4 +1,4 @@
-﻿using Azure.Identity;
+using Azure.Identity;
 
 namespace Messaging.Client;
 
@@ -32,6 +32,13 @@ public class MessageProducer : IMessageProducer
         var fullyQualifiedNameSpace = $"{nameSpace}.servicebus.windows.net";
 
         var credentials = new DefaultAzureCredential();
+        var options = new EventHubProducerClientOptions
+        {
+            ConnectionOptions = new EventHubConnectionOptions
+            {
+                TransportType = EventHubsTransportType.AmqpWebSockets
+            }
+        };
         _producer = new EventHubProducerClient(fullyQualifiedNameSpace, eventHubName, credentials);
     }
 
@@ -45,7 +52,14 @@ public class MessageProducer : IMessageProducer
         var fullyQualifiedNameSpace = $"{nameSpace}.servicebus.windows.net";
 
         var credentials = new DefaultAzureCredential();
-        _producer = new EventHubProducerClient(fullyQualifiedNameSpace, eventHubName, credentials);
+        var options = new EventHubProducerClientOptions
+        {
+            ConnectionOptions = new EventHubConnectionOptions
+            {
+                TransportType = EventHubsTransportType.AmqpWebSockets
+            }
+        };
+        _producer = new EventHubProducerClient(fullyQualifiedNameSpace, eventHubName, credentials, options);
     }
 
     public void SendMessages(IList<(string name, object message)> messages)
