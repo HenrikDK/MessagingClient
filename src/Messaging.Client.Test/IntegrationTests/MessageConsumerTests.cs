@@ -27,7 +27,9 @@ public class MessageConsumerTests
 
         var registry = new ServiceRegistry();
         registry.AddSingleton(_configuration);
-        registry.For<IMessageConsumer>().Use(x => new MessageConsumer(x.GetInstance<IConfiguration>(), Substitute.For<ILogger<MessageConsumer>>())).Singleton();
+        registry.For<IMessageConsumer>()
+            .Use(x => new MessageConsumer(x.GetInstance<IConfiguration>(), Substitute.For<ILogger<MessageConsumer>>()))
+            .Singleton();
         _container = new Container(registry);
     }
     

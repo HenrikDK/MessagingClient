@@ -129,7 +129,14 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         EnsureConsumerGroup(subscriptionId, resourceGroup, credentials, nameSpace, eventHubName, consumerGroup);
 
         _storageClient = new BlobContainerClient(new Uri(storageContainer), credentials);
-        _processor = new EventProcessorClient(_storageClient, consumerGroup, fullyQualifiedNameSpace, eventHubName, credentials);
+        var options = new EventProcessorClientOptions
+        {
+            ConnectionOptions = new EventHubConnectionOptions
+            {
+                TransportType = EventHubsTransportType.AmqpWebSockets
+            }
+        };
+        _processor = new EventProcessorClient(_storageClient, consumerGroup, fullyQualifiedNameSpace, eventHubName, credentials, options);
         _processor.ProcessEventAsync += ProcessEventHandler;
         _processor.ProcessErrorAsync += ProcessErrorHandler;
         
