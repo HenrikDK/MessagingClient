@@ -1,4 +1,4 @@
-namespace Messaging.Client;
+﻿namespace Messaging.Client;
 
 public interface IMessageConsumer
 {

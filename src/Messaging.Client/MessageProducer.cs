@@ -1,6 +1,4 @@
-using Azure.Identity;
-
-namespace Messaging.Client;
+﻿namespace Messaging.Client;
 
 public interface IMessageProducer
 {
@@ -19,14 +17,17 @@ public interface IMessageProducer
 
 public class MessageProducer : IMessageProducer
 {
+    private readonly ILogger<MessageProducer> _logger;
     private EventHubProducerClient _producer;
-    
+
     /// <summary>
     /// Create a new message producer
     /// </summary>
     /// <param name="configuration">configuration object that will provide "eventhub-id"</param>
-    public MessageProducer(IConfiguration configuration)
+    /// <param name="logger">logging object to register errors</param>
+    public MessageProducer(IConfiguration configuration, ILogger<MessageProducer> logger)
     {
+        _logger = logger;
         var eventHubId = configuration.GetValue<string>("eventhub-id");
         var (subscriptionId, resourceGroup, nameSpace, eventHubName) = eventHubId.ExtractValuesFromId();
         var fullyQualifiedNameSpace = $"{nameSpace}.servicebus.windows.net";
@@ -45,9 +46,10 @@ public class MessageProducer : IMessageProducer
     /// <summary>
     /// Create a new message producer
     /// </summary>
-    /// <param name="configuration">Azure id of the eventhub from the json view</param>
-    public MessageProducer(string eventHubId)
+    /// <param name="eventHubId">Azure id of the eventhub from the json view</param>
+    public MessageProducer(string eventHubId, ILogger<MessageProducer> logger)
     {
+        _logger = logger;
         var (subscriptionId, resourceGroup, nameSpace, eventHubName) = eventHubId.ExtractValuesFromId();
         var fullyQualifiedNameSpace = $"{nameSpace}.servicebus.windows.net";
 
@@ -99,9 +101,9 @@ public class MessageProducer : IMessageProducer
                 _producer.SendAsync(batch);
             }
         }
-        catch
+        catch(Exception e)
         {
-            // Transient failures are automatically retried
+            _logger.LogError(e, "Error sending messages");
         }
     }
     
