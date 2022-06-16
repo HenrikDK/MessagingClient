@@ -28,7 +28,9 @@ public class MessageProducerTests
 
         var registry = new ServiceRegistry();
         registry.AddSingleton(_configuration);
-        registry.For<IMessageProducer>().Use(x => new MessageProducer(x.GetInstance<IConfiguration>())).Singleton();
+        registry.For<IMessageProducer>()
+            .Use(x => new MessageProducer(x.GetInstance<IConfiguration>(), x.GetInstance<ILogger<MessageProducer>>()))
+            .Singleton();
         _container = new Container(registry);
     }
     
