@@ -40,7 +40,7 @@ public class MessageProducer : IMessageProducer
                 TransportType = EventHubsTransportType.AmqpWebSockets
             }
         };
-        _producer = new EventHubProducerClient(fullyQualifiedNameSpace, eventHubName, credentials);
+        _producer = new EventHubProducerClient(fullyQualifiedNameSpace, eventHubName, credentials, options);
     }
 
     /// <summary>
