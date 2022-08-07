@@ -28,6 +28,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
     private BlobContainerClient _storageClient;
     private CancellationToken _token;
     private ConcurrentDictionary<string, int> partitionEventCount = new();
+    private readonly Stopwatch _checkpointStopWatch = new Stopwatch();
     
     public MessageConsumer(IConfiguration configuration, ILogger<MessageConsumer> logger)
     {
@@ -45,53 +46,36 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         {
             // Do Nothing
         }
+
+        await Task.CompletedTask;
     }
 
     private async Task ProcessEventHandler(ProcessEventArgs arg)
     {
         try
         {
-            if (arg.CancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-        
-            if (!arg.Data.Properties.ContainsKey("MessageName"))
-            {
-                return;
-            }
+            ProcessEvent(arg);
+        }
+        catch (Exception e)
+        {
+            // Do Nothing
+        }
 
-            var messageName = arg.Data.Properties["MessageName"].ToString();
-            if (!_handlers.ContainsKey(messageName))
-            {
-                return;
-            }
-        
-            var (type, handler) = _handlers[messageName];
-
-            var body = Encoding.UTF8.GetString(arg.Data.EventBody.ToArray());
-
-            var message = JsonSerializer.Deserialize(body, type);
-            
-            try
-            {
-                handler.Invoke(message, new Guid(arg.Data.MessageId));
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Exception handling message, skipping");
-            }
-            
-            var partitionId = arg.Partition.PartitionId;
+        try
+        {
             var eventsSinceLastCheckpoint = partitionEventCount.AddOrUpdate(
-                key: partitionId,
+                key: arg.Partition.PartitionId,
                 addValue: 1,
                 updateValueFactory: (_, currentCount) => currentCount + 1);
 
-            if (eventsSinceLastCheckpoint >= 50)
+            if (_checkpointStopWatch.Elapsed > TimeSpan.FromMinutes(1) || eventsSinceLastCheckpoint >= 50)
             {
-                await arg.UpdateCheckpointAsync();
-                partitionEventCount[partitionId] = 0;
+                if (eventsSinceLastCheckpoint > 0)
+                {
+                    await arg.UpdateCheckpointAsync();
+                    partitionEventCount[arg.Partition.PartitionId] = 0;
+                }
+                _checkpointStopWatch.Reset();
             }
         }
         catch (Exception e)
@@ -100,6 +84,40 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         }
     }
 
+    private void ProcessEvent(ProcessEventArgs arg)
+    {
+        if (arg.CancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+    
+        if (!arg.Data.Properties.ContainsKey("MessageName"))
+        {
+            return;
+        }
+
+        var messageName = arg.Data.Properties["MessageName"].ToString();
+        if (!_handlers.ContainsKey(messageName))
+        {
+            return;
+        }
+    
+        var (type, handler) = _handlers[messageName];
+
+        var body = Encoding.UTF8.GetString(arg.Data.EventBody.ToArray());
+
+        var message = JsonSerializer.Deserialize(body, type);
+        
+        try
+        {
+            handler.Invoke(message, new Guid(arg.Data.MessageId));
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Exception handling message, skipping");
+        }
+    }
+    
     /// <summary>
     /// Register a handler with the consumer, uses reflection to determine message name if none is provided. 
     /// </summary>
@@ -140,6 +158,7 @@ public class MessageConsumer : IDisposable, IMessageConsumer
         _processor.ProcessEventAsync += ProcessEventHandler;
         _processor.ProcessErrorAsync += ProcessErrorHandler;
         
+        _checkpointStopWatch.Start();
         _processor.StartProcessing(_token);
 
         while (_processor.IsRunning)
